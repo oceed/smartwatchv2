@@ -29,6 +29,8 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
     private SensorManager sensorManager;
@@ -55,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        heartRateTextView = findViewById(R.id.heartRateTextView);
+        heartRateTextView = findViewById(R.id.heartRateTextView);
         locationTextView = findViewById(R.id.locationTextView);
         mqttStatusTextView = findViewById(R.id.mqttStatusTextView); // Add this line
 
@@ -67,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Check and request permissions
         if (hasRequiredPermissions()) {
-//            initializeHeartRateSensor();
+            initializeHeartRateSensor();
             initializeLocationUpdates();
             requestBatteryOptimizationPermission();
         } else {
@@ -95,30 +97,42 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-//    private void initializeHeartRateSensor() {
-//        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-//        if (sensorManager != null) {
-//            heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE);
-//            if (heartRateSensor != null) {
-//                sensorManager.registerListener(new SensorEventListener() {
-//                    @Override
-//                    public void onSensorChanged(SensorEvent event) {
-//                        if (event.sensor.getType() == Sensor.TYPE_HEART_RATE) {
-//                            float heartRate = event.values[0];
-//                            heartRateTextView.setText("Heart Rate: " + heartRate + " BPM");
-//                        }
-//                    }
-//
-//                    @Override
-//                    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-//                        // Handle accuracy changes if needed
-//                    }
-//                }, heartRateSensor, SensorManager.SENSOR_DELAY_NORMAL);
-//            } else {
-//                Toast.makeText(this, "Heart Rate Sensor not available!", Toast.LENGTH_LONG).show();
-//            }
-//        }
-//    }
+    private void initializeHeartRateSensor() {
+        SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+
+        if (sensorManager != null) {
+            // Loop melalui semua sensor dan cari yang memiliki type 65599
+            List<Sensor> sensorList = sensorManager.getSensorList(Sensor.TYPE_ALL);
+            Sensor heartRateSensor = null;
+
+            for (Sensor sensor : sensorList) {
+                if (sensor.getType() == 65599) { // Gunakan ID sensor 65599
+                    heartRateSensor = sensor;
+                    break;
+                }
+            }
+
+            if (heartRateSensor != null) {
+                sensorManager.registerListener(new SensorEventListener() {
+                    @Override
+                    public void onSensorChanged(SensorEvent event) {
+                        if (event.sensor.getType() == 65599) {
+                            float heartRate = event.values[1];
+                            heartRateTextView.setText("Heart Rate: " + heartRate + " BPM");
+                        }
+                    }
+
+                    @Override
+                    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+                        // Handle accuracy changes if needed
+                    }
+                }, heartRateSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            } else {
+                Toast.makeText(this, "Custom Heart Rate Sensor not available!", Toast.LENGTH_LONG).show();
+            }
+        }
+
+    }
 
     private void initializeLocationUpdates() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -171,6 +185,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         // Minimize the app instead of finishing it
+        super.onBackPressed();
         moveTaskToBack(true);
     }
 
